@@ -1,0 +1,23 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:monitor;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true   # http://localhost:8080/h2-console
+  sql:
+    init:
+      mode: always    # schema.sql 실행
+
+monitor:
+  zone: Asia/Seoul
+  detect-interval-ms: 60000        # 이슈 감지 주기
+  count-deviation-threshold: 0.5   # 평소 대비 ±50% 이상이면 '확인필요'
+  history-days: 10                 # 평균·차트에 쓰는 영업일 수
+  demo:
+    enabled: true                  # 샘플 데이터 적재 (운영에서는 false)
+    start-at: 2026-10-07T09:20:30  # 앱 시계를 이 시각부터 흐르게 함 (비우면 실제 시각)

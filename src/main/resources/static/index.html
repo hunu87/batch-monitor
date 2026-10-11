@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>발송 배치 모니터링</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-inner">
+    <div class="top-left">
+      <h1>발송 배치 모니터링</h1>
+      <span class="chip" id="bizDateChip">영업일 · –</span>
+    </div>
+    <div class="top-right">
+      <span>기준 시각 <strong class="mono" id="now">–</strong></span>
+      <span class="live"><span class="live-dot"></span>1분마다 자동 갱신</span>
+      <label>조회일 <input type="date" id="date"></label>
+    </div>
+  </div>
+</header>
+
+<main class="wrap main">
+  <section class="cards" id="cards" aria-label="오늘 상태 요약"></section>
+
+  <div class="split">
+    <section class="panel jobs" aria-label="오늘의 배치">
+      <div class="panel-head">
+        <h2>오늘의 배치 <span class="muted-strong" id="filterLabel">· 전체</span></h2>
+        <span class="hint">문제 우선 정렬 · 행을 누르면 상세</span>
+      </div>
+      <div class="table-scroll">
+        <div class="table">
+          <div class="grid-row thead">
+            <span>배치명</span><span>채널</span><span>스케줄</span><span>예정</span><span>실행</span><span>상태</span>
+            <span class="r">처리 건수</span><span class="r">평소 대비</span>
+          </div>
+          <div id="rows"></div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="panel pad" aria-label="채널별 발송 현황">
+        <h2>채널별 발송 현황</h2>
+        <div id="channels"></div>
+      </section>
+      <section class="panel" aria-label="이슈">
+        <div class="panel-head plain">
+          <h2>이슈 피드</h2>
+          <span class="hint" id="openIssues">미확인 0건</span>
+        </div>
+        <div id="issues"></div>
+      </section>
+    </aside>
+  </div>
+
+  <section class="panel pad detail" id="detail" aria-label="배치 상세" hidden></section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
