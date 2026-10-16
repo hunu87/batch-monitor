@@ -17,7 +17,6 @@ public class DashboardResponse {
     private final Map<String, Integer> counts;
     /** 문제 우선 정렬 */
     private final List<JobRow> rows;
-    private final List<ChannelStat> channels;
     private final List<IssueView> issues;
 
     @Getter
@@ -25,7 +24,6 @@ public class DashboardResponse {
     public static class JobRow {
         private final String jobId;
         private final String name;
-        private final String channel;
         private final String rule;
         private final String plan;
         private final int toleranceMin;
@@ -39,15 +37,6 @@ public class DashboardResponse {
         private final String diffText;
         private final boolean diffAlert;
         private final String reason;
-    }
-
-    @Getter
-    @AllArgsConstructor
-    public static class ChannelStat {
-        private final String name;
-        private final int target;
-        private final int success;
-        private final int fail;
     }
 
     @Getter

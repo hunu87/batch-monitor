@@ -74,7 +74,6 @@
     $('now').textContent = d.now;
     renderCards(d);
     renderRows(d);
-    renderChannels(d);
     renderIssues(d);
   }
 
@@ -104,7 +103,6 @@
       var diffCls = 'num' + (r.diffAlert ? ' alert' : (r.diffText === '–' ? ' dim' : ''));
       return '<button type="button" class="' + cls + '" data-job="' + esc(r.jobId) + '">'
         + '<span class="name-cell"><b>' + esc(r.name) + '</b><small>' + esc(r.jobId) + '</small></span>'
-        + '<span>' + esc(r.channel) + '</span>'
         + '<span class="sub">' + esc(r.rule) + '</span>'
         + '<span class="mono">' + esc(r.plan) + '</span>'
         + '<span class="mono sub">' + esc(r.runText) + '</span>'
@@ -112,23 +110,6 @@
         + '<span class="num">' + fmt(r.processed) + '</span>'
         + '<span class="' + diffCls + '">' + esc(r.diffText) + '</span>'
         + '</button>';
-    }).join('');
-  }
-
-  function renderChannels(d) {
-    $('channels').innerHTML = d.channels.map(function (c) {
-      var done = c.success + c.fail;
-      var rate = done > 0 ? c.success / done * 100 : null;
-      var low = rate !== null && rate < 98;
-      var rateColor = rate === null ? '#6B7280' : (low ? '#7F3F00' : '#1F6B3F');
-      return '<div class="ch">'
-        + '<div class="ch-head"><b>' + esc(c.name) + '</b>'
-        + '<span class="ch-rate" style="color:' + rateColor + '">' + (rate === null ? '발송 전' : '성공률 ' + rate.toFixed(1) + '%') + '</span></div>'
-        + '<div class="bar"><div style="width:' + (rate || 0) + '%;background:' + (low ? '#D2690F' : '#2E8B57') + '"></div></div>'
-        + '<div class="ch-nums"><span>대상 <strong>' + fmt(c.target) + '</strong></span>'
-        + '<span>성공 <strong>' + fmt(c.success) + '</strong></span>'
-        + '<span>실패 <strong style="color:#9F2A14">' + fmt(c.fail) + '</strong></span></div>'
-        + '</div>';
     }).join('');
   }
 
@@ -167,7 +148,7 @@
 
     $('detail').innerHTML =
       '<div class="d-info">'
-      + '<div class="d-title"><small>' + esc(r.jobId) + ' · ' + esc(r.channel) + '</small><h2>' + esc(r.name) + '</h2><span>' + pill(r.status) + '</span></div>'
+      + '<div class="d-title"><small>' + esc(r.jobId) + '</small><h2>' + esc(r.name) + '</h2><span>' + pill(r.status) + '</span></div>'
       + '<dl>'
       + '<dt>스케줄</dt><dd>' + esc(r.rule) + ' · 예정 ' + esc(r.plan) + '</dd>'
       + '<dt>허용 지연</dt><dd>시작 ' + r.toleranceMin + '분 · 소요 ' + r.expectedMin + '분</dd>'

@@ -1,12 +1,12 @@
 package com.example.batchmonitor.repository;
 
-import com.example.batchmonitor.domain.Channel;
 import com.example.batchmonitor.domain.JobDef;
 import com.example.batchmonitor.domain.JobRun;
 import com.example.batchmonitor.domain.RunStatus;
 import com.example.batchmonitor.domain.ScheduleRule;
 import com.example.batchmonitor.domain.Status;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -15,29 +15,56 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Repository
-@RequiredArgsConstructor
 public class MonitorRepository {
 
-    private final JdbcTemplate jdbc;
+    /** 판정 대상 배치: 사용 중이고 스케줄 시각이 있는 것 */
+    private static final String JOB_SQL = "select PRGM_KND, PRGM_NM, PROC_SCHD_PROD, SCHD_TM, MNGR from BAT_PROC_LST "
+            + "where USE_YN = 'Y' and SCHD_TM is not null";
 
-    private static final RowMapper<JobDef> JOB = (rs, i) -> new JobDef(
-            rs.getString("job_id"),
-            rs.getString("name"),
-            Channel.valueOf(rs.getString("channel")),
-            ScheduleRule.valueOf(rs.getString("schedule_rule")),
-            rs.getTime("plan_time").toLocalTime(),
-            rs.getInt("tolerance_min"),
-            rs.getInt("expected_min"),
-            rs.getString("owner"));
+    private final JdbcTemplate jdbc;
+    private final int defaultToleranceMin;
+    private final int defaultExpectedMin;
+
+    public MonitorRepository(JdbcTemplate jdbc,
+                             @Value("${monitor.default-tolerance-min:10}") int defaultToleranceMin,
+                             @Value("${monitor.default-expected-min:30}") int defaultExpectedMin) {
+        this.jdbc = jdbc;
+        this.defaultToleranceMin = defaultToleranceMin;
+        this.defaultExpectedMin = defaultExpectedMin;
+    }
+
+    /** SCHD_TM 을 읽을 수 없는 행은 null → 호출 쪽에서 제외 */
+    private JobDef mapJob(ResultSet rs, int rowNum) throws SQLException {
+        String id = rs.getString("PRGM_KND");
+        LocalTime plan = parseTime(id, rs.getString("SCHD_TM"));
+        if (plan == null) {
+            return null;
+        }
+        String ruleText = rs.getString("PROC_SCHD_PROD");
+        ScheduleRule rule = ScheduleRule.fromText(ruleText);
+        if (rule == null) {
+            log.warn("[배치 정의] {} 처리예정주기 '{}' 를 해석하지 못해 매영업일로 판정", id, ruleText);
+            rule = ScheduleRule.DAILY_BIZ;
+        }
+        return new JobDef(id, rs.getString("PRGM_NM"), rule, ruleText != null ? ruleText : rule.getLabel(),
+                plan, defaultToleranceMin, defaultExpectedMin, rs.getString("MNGR"));
+    }
 
     private static final RowMapper<JobRun> RUN = (rs, i) -> new JobRun(
             rs.getLong("run_id"),
@@ -62,18 +89,22 @@ public class MonitorRepository {
     // ---- 배치 정의 ----
 
     public List<JobDef> findJobs() {
-        return jdbc.query("select * from batch_job order by plan_time, job_id", JOB);
+        return jdbc.query(JOB_SQL + " order by SCHD_TM, PRGM_KND", this::mapJob).stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     public Optional<JobDef> findJob(String jobId) {
-        return jdbc.query("select * from batch_job where job_id = ?", JOB, jobId).stream().findFirst();
+        return jdbc.query(JOB_SQL + " and PRGM_KND = ?", this::mapJob, jobId).stream()
+                .filter(Objects::nonNull)
+                .findFirst();
     }
 
-    public void insertJob(JobDef j) {
-        jdbc.update("insert into batch_job (job_id, name, channel, schedule_rule, plan_time, tolerance_min, expected_min, owner) "
-                        + "values (?, ?, ?, ?, ?, ?, ?, ?)",
-                j.getJobId(), j.getName(), j.getChannel().name(), j.getRule().name(),
-                j.getPlanTime(), j.getToleranceMin(), j.getExpectedMin(), j.getOwner());
+    /** 데모용. 실제 BAT_PROC_LST 는 배치 관리 화면에서 관리한다 */
+    public void insertJob(String prgmKnd, String prgmNm, String procSchdProd, String schdTm, String mngr) {
+        jdbc.update("insert into BAT_PROC_LST (PRGM_KND, PRGM_NM, PROC_SCHD_PROD, SCHD_TM, MNGR, USE_YN, RGST_DT) "
+                        + "values (?, ?, ?, ?, ?, 'Y', current_date)",
+                prgmKnd, prgmNm, procSchdProd, schdTm, mngr);
     }
 
     // ---- 실행 기록 ----
@@ -153,6 +184,20 @@ public class MonitorRepository {
 
     public int ackIssue(long issueId, boolean acked) {
         return jdbc.update("update batch_issue set acked = ? where issue_id = ?", acked, issueId);
+    }
+
+    /** SCHD_TM: "HH:MM" 또는 "HHMM" */
+    private static LocalTime parseTime(String jobId, String text) {
+        String t = text.trim();
+        if (t.matches("\\d{4}")) {
+            t = t.substring(0, 2) + ":" + t.substring(2);
+        }
+        try {
+            return LocalTime.parse(t.length() == 4 ? "0" + t : t);
+        } catch (DateTimeParseException e) {
+            log.warn("[배치 정의] {} 스케줄시간 '{}' 형식 오류로 판정에서 제외", jobId, text);
+            return null;
+        }
     }
 
     private static LocalDateTime toLocalDateTime(Timestamp ts) {

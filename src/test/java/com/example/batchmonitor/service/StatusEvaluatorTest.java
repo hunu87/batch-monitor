@@ -1,6 +1,5 @@
 package com.example.batchmonitor.service;
 
-import com.example.batchmonitor.domain.Channel;
 import com.example.batchmonitor.domain.JobDef;
 import com.example.batchmonitor.domain.JobRun;
 import com.example.batchmonitor.domain.RunStatus;
@@ -19,7 +18,7 @@ class StatusEvaluatorTest {
     private final StatusEvaluator evaluator = new StatusEvaluator(0.5);
     private final LocalDate day = LocalDate.of(2026, 10, 7);
     // 08:00 예정, 시작 허용 10분, 예상 소요 15분
-    private final JobDef job = new JobDef("J1", "테스트", Channel.SMS, ScheduleRule.DAILY_BIZ,
+    private final JobDef job = new JobDef("J1", "테스트", ScheduleRule.DAILY_BIZ, "매영업일",
             LocalTime.of(8, 0), 10, 15, "담당");
     private final LocalDateTime plan = day.atTime(8, 0);
 

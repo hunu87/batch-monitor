@@ -18,6 +18,8 @@ monitor:
   detect-interval-ms: 60000        # 이슈 감지 주기
   count-deviation-threshold: 0.5   # 평소 대비 ±50% 이상이면 '확인필요'
   history-days: 10                 # 평균·차트에 쓰는 영업일 수
+  default-tolerance-min: 10        # 예정 시각 + 이 분까지 시작 보고가 없으면 '미실행' (BAT_PROC_LST에 없는 값)
+  default-expected-min: 30         # 시작 + 이 분이 지나도 진행중이면 '지연' (BAT_PROC_LST에 없는 값)
   demo:
     enabled: true                  # 샘플 데이터 적재 (운영에서는 false)
     start-at: 2026-10-07T09:20:30  # 앱 시계를 이 시각부터 흐르게 함 (비우면 실제 시각)

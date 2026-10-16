@@ -1,6 +1,5 @@
 package com.example.batchmonitor.service;
 
-import com.example.batchmonitor.domain.Channel;
 import com.example.batchmonitor.domain.JobDef;
 import com.example.batchmonitor.domain.JobRun;
 import com.example.batchmonitor.domain.RunStatus;
@@ -9,7 +8,6 @@ import com.example.batchmonitor.repository.IssueRow;
 import com.example.batchmonitor.repository.MonitorRepository;
 import com.example.batchmonitor.service.StatusEvaluator.Evaluation;
 import com.example.batchmonitor.web.DashboardResponse;
-import com.example.batchmonitor.web.DashboardResponse.ChannelStat;
 import com.example.batchmonitor.web.DashboardResponse.HistoryPoint;
 import com.example.batchmonitor.web.DashboardResponse.IssueView;
 import com.example.batchmonitor.web.DashboardResponse.JobRow;
@@ -25,7 +23,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -115,7 +112,6 @@ public class MonitorService {
                 .now(LocalDateTime.now(clock).format(HMS))
                 .counts(counts)
                 .rows(snaps.stream().map(this::toRow).collect(Collectors.toList()))
-                .channels(channelStats(snaps))
                 .issues(issues)
                 .build();
     }
@@ -160,8 +156,7 @@ public class MonitorService {
         return JobRow.builder()
                 .jobId(job.getJobId())
                 .name(job.getName())
-                .channel(job.getChannel().getLabel())
-                .rule(job.getRule().getLabel())
+                .rule(job.getRuleText())
                 .plan(job.getPlanTime().format(HM))
                 .toleranceMin(job.getToleranceMin())
                 .expectedMin(job.getExpectedMin())
@@ -175,26 +170,6 @@ public class MonitorService {
                 .diffAlert(diffAlert)
                 .reason(s.getEval().getReason())
                 .build();
-    }
-
-    private List<ChannelStat> channelStats(List<JobSnapshot> snaps) {
-        Map<Channel, int[]> sum = new EnumMap<>(Channel.class);   // [대상, 성공, 실패]
-        for (Channel c : Channel.values()) {
-            sum.put(c, new int[3]);
-        }
-        for (JobSnapshot s : snaps) {
-            JobRun run = s.getRun();
-            if (run == null) {
-                continue;
-            }
-            int[] acc = sum.get(s.getJob().getChannel());
-            acc[0] += run.getTargetCount() != null ? run.getTargetCount() : run.processed();
-            acc[1] += run.getSuccessCount();
-            acc[2] += run.getFailCount();
-        }
-        return sum.entrySet().stream()
-                .map(e -> new ChannelStat(e.getKey().getLongLabel(), e.getValue()[0], e.getValue()[1], e.getValue()[2]))
-                .collect(Collectors.toList());
     }
 
     /** 이전 영업일 중 스케줄 대상이고 성공한 날의 평균 처리 건수 */
