@@ -38,7 +38,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `Status` enum은 한국어 라벨, 정렬용 `rank`(문제 상태가 위로), `issue` 여부를 가진다. 이슈 상태(FAIL, MISS, DELAY, CHECK)만 `IssueDetector`가 기록한다.
 - `IssueDetector`(`@Scheduled`, `monitor.detect-interval-ms`)가 필요한 이유: "미실행"은 배치가 아무것도 보고하지 않아야 생기는 상태라 서버가 시간을 보고 판정해야만 잡힌다. `batch_issue`의 unique 제약으로 (영업일, 배치, 상태)당 한 번만 쌓인다. 메신저/메일 알림은 여기 `TODO` 자리에 붙인다.
 - `BusinessCalendar`는 주말 + `holiday` 테이블 기준이며 휴일을 메모리에 캐시한다. 휴일을 바꾸면 `reload()`를 호출해야 한다. `ScheduleRule` enum(`DAILY_BIZ`, `MONTHLY_FIRST_BIZ`)이 이를 사용하므로 새 스케줄 유형은 여기에 추가한다.
-- 배치 정의는 `BAT_PROC_LST`(실제 배치 관리 테이블, 모니터가 소유하지 않음)에서 읽는다. `MonitorRepository.findJobs()`가 `USE_YN = 'Y'`이고 `SCHD_TM`이 있는 행만 `JobDef`로 바꾼다. `PRGM_KND`가 배치 ID(`batch_run`·`batch_issue`의 `job_id`), `PROC_SCHD_PROD` 한글 문구는 `ScheduleRule.fromText()`로 해석한다(못 읽으면 경고 로그 후 매영업일). 시작 허용·예상 소요 분은 테이블에 없어서 `monitor.default-tolerance-min`/`default-expected-min`을 모든 배치에 쓴다. 채널(카톡/문자/이메일) 구분은 없다.
+- 배치 정의는 `BAT_PROC_LST`(실제 배치 관리 테이블, 모니터가 소유하지 않음)에서 읽는다. `MonitorRepository.findJobs()`가 `USE_YN = 'Y'`이고 `SCHD_TM`이 있는 행만 `JobDef`로 바꾼다. `PRGM_KND`가 배치 ID(`batch_run`·`batch_issue`의 `job_id`), `PROC_SCHD_PROD` 값은 `매영업일`·`매월 첫영업일` 두 가지이고 `ScheduleRule.fromText()`가 enum `label`과 비교해 해석한다(그 외 값은 경고 로그 후 매영업일). 새 주기 값이 생기면 같은 라벨로 `ScheduleRule`에 추가한다. 시작 허용·예상 소요 분은 테이블에 없어서 `monitor.default-tolerance-min`/`default-expected-min`을 모든 배치에 쓴다. 채널(카톡/문자/이메일) 구분은 없다.
 - 같은 날 재실행하면 (배치, 영업일)별로 `run_id`가 가장 큰 실행만 판정에 쓴다(`MonitorRepository.findLatestRuns`).
 
 **시각.** 모든 "현재 시각"은 주입받은 `java.time.Clock` 빈(`ClockConfig`)에서 가져온다. Clock 없이 `LocalDateTime.now()`를 쓰지 않는다. `monitor.demo.start-at`이 있으면 앱이 그 시각부터 실제 속도로 흐르는 시계를 쓴다.

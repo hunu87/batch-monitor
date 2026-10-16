@@ -3,7 +3,7 @@
 create table if not exists BAT_PROC_LST (
     PRGM_KND       varchar2(5)    not null primary key,  -- 프로그램종류
     PRGM_NM        varchar2(100),                        -- 프로그램명
-    PROC_SCHD_PROD varchar2(40),                         -- 처리예정주기 (예: 매영업일, 매월 첫영업일)
+    PROC_SCHD_PROD varchar2(40),                         -- 처리예정주기 (매영업일 / 매월 첫영업일)
     PRGM_OPRT_FILE varchar2(200),                        -- 프로그램실행파일
     MNGR           varchar2(8),                          -- 담당자
     NOTE           varchar2(200),                        -- 비고

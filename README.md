@@ -38,7 +38,7 @@ Spring Boot 2.5 + JdbcTemplate + H2(in-memory) + 정적 HTML/JS.
 |---|---|
 | `PRGM_KND` | 배치 ID. 보고 API의 `jobId`, `batch_run`·`batch_issue`의 `job_id` |
 | `PRGM_NM` | 배치명 |
-| `PROC_SCHD_PROD` | 스케줄 규칙. `매영업일`·`영업일`·`매일`·`평일` → 매영업일, `매월 첫영업일`·`월초` → 매월 첫영업일. 그 외 문구는 경고 로그를 남기고 매영업일로 판정 |
+| `PROC_SCHD_PROD` | 스케줄 규칙. `매영업일` 또는 `매월 첫영업일` (공백 차이는 무시). 그 외 값은 경고 로그를 남기고 매영업일로 판정 |
 | `SCHD_TM` | 예정 시각 (`HH:MM` 또는 `HHMM`) |
 | `MNGR` | 담당자 |
 
